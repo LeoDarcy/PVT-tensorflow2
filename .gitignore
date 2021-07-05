@@ -11,3 +11,4 @@ tmp
 *.pyc
 *.pyo
 *.png
+logs/*
