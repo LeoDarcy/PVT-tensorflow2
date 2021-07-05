@@ -12,7 +12,8 @@ def get_patch_embed_model(img_size,first_level_patch_size=4,embed_dims=[64, 128,
     outputs = []
     feat_size_list = []
     feat_size = np.array(img_size)
-
+    #print(feat_size, "feat_size")
+    #assert(1==0)
     for i in range(1,len(embed_dims)):
         input = tf.keras.layers.Input([feat_size[0]*feat_size[1],embed_dims[i-1]])
         x = tf.reshape(input,(tf.shape(input)[0],feat_size[0],feat_size[1],embed_dims[i-1]))
@@ -117,6 +118,9 @@ def get_pvt(img_size,num_classes,block_depth,mlp_ratio,drop_path_rate,first_leve
     patch_embed_model_list,feat_size_list = get_patch_embed_model(img_size,first_level_patch_size,embed_dims)
     x = input
     x = tf.reshape(x,[tf.shape(input)[0],-1,tf.shape(input)[-1]])
+
+    #补充多个输出
+    
     for i in range(len(patch_embed_model_list)):
         x = patch_embed_model_list[i](x)
         if i == len(patch_embed_model_list)-1:
@@ -130,9 +134,20 @@ def get_pvt(img_size,num_classes,block_depth,mlp_ratio,drop_path_rate,first_leve
         x = get_block_attention_model(block_depth[i],block_drop_path_rate[block_depth_index:block_depth_index+block_depth[i]],mlp_ratio[i],
                                       feat_size_list[i],num_patch,embed_dims[i],num_heads[i],sr_ratio[i],attention_drop_rate,drop_rate)(x)
         block_depth_index+=block_depth[i]
+        
+        if i == 0:
+            output1 = tf.keras.layers.Dense(name='out1', units = 4 * 3)(x[:,0])
+        elif i == 1:
+            output2 = tf.keras.layers.Dense(name='out2', units = 9 * 3)(x[:,0])
+        elif i == 2:
+            output4 = tf.keras.layers.Dense(name='out4', units = 16 * 3)(x[:,0])
+        elif i == 3:
+            output10 = tf.keras.layers.Dense(name='out10',units = 121 * 3)(x[:,0])
+    
     x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x)
+    
     output = tf.keras.layers.Dense(num_classes, activation='softmax')(x[:,0])
-    return tf.keras.Model(input,output,name='PVT')
+    return tf.keras.Model(input,[output1, output2, output10],name='PVT')
 
 
 class PVTNet():
@@ -143,7 +158,7 @@ class PVTNet():
         self.type = type
     def get_model(self):
         if self.type=='tiny':
-            model = get_pvt(img_size=(self.img_size,self.img_size),num_classes=self.classes,
+            model = get_pvt(img_size=(192, 256),num_classes=self.classes,
                             first_level_patch_size=4,
                             block_depth=[2, 2, 2, 2], mlp_ratio=[8, 8, 4, 4],
                             embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8],sr_ratio=[8, 4, 2, 1],

@@ -22,10 +22,14 @@ def get_lr_scheduler(args):
         def scheduler(epoch,lr=0.001):
             if epoch < args.warmup_epochs:
                 current_epoch_lr = args.warmup_lr + epoch * (args.init_lr - args.warmup_lr) / args.warmup_epochs
+                print("epoch:{} lr:{:.6f}".format(epoch,current_epoch_lr))
             else:
                 current_epoch_lr = args.init_lr * (
                         1.0 + tf.math.cos(np.pi / (args.epochs - args.warmup_epochs) * (epoch - args.warmup_epochs))) / 2.0
-            print("epoch:{} lr:{:.6f}".format(epoch,current_epoch_lr.numpy()))
+            
+            
+                print("epoch:{} lr:{:.6f}".format(epoch,current_epoch_lr.numpy()))
+            #assert(1==0)
             return current_epoch_lr
     else:
         raise ValueError("{} is not supported!".format(args.lr_scheduler))
